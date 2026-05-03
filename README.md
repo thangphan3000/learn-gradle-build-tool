@@ -1,48 +1,133 @@
-# Docs
+# Learn Gradle Build Tool (Java Multi-Module)
 
-## Task concepts in Gradle
-- Input -> Action -> Outputs
+This repository is a Java multi-module Gradle project with:
 
-### Input read by task
-- Files
-- Configuration properties
-- Can be output from other tasks
+- `app`: runnable application module
+- `util`: reusable library module
 
-### Action
-- What the task does when executing
+## Folder structure
 
-### Outputs
-- Eg. Files produced by action
-- Often produces are put in the `build` directory
+```text
+.
+├── app/                                # Application module
+│   ├── build.gradle
+│   └── src/
+│       ├── main/java/com/bank/App.java
+│       └── test/java/com/bank/AppTest.java
+├── util/                               # Shared library module
+│   ├── build.gradle
+│   └── src/
+│       ├── main/java/com/bank/util/Utils.java
+│       └── test/java/com/bank/util/UtilsTest.java
+├── gradle/
+│   ├── libs.versions.toml              # Dependency version catalog
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── settings.gradle                     # Declares included modules
+├── gradle.properties                   # Gradle runtime/config flags
+├── gradlew                             # Unix wrapper
+├── gradlew.bat                         # Windows wrapper
+└── README.md
+```
 
-### Depedency and orderding
-- Other tasks that need to run before
-- Tasks that need to run after
+## How Java structure works
+
+Each module follows the standard source layout:
+
+- `src/main/java`: production code
+- `src/test/java`: test code
+
+Package names map directly to folders.
+
+Example:
+
+```java
+package com.bank.util;
+```
+
+must be in:
+
+```text
+src/main/java/com/bank/util/Utils.java
+```
+
+This mapping is how Java and Gradle find and compile classes correctly.
+
+## Module responsibilities
+
+### app
+
+- Uses `application` plugin
+- Has the entrypoint (`main` method)
+- Depends on `util` via `implementation project(':util')`
+
+### util
+
+- Uses `java-library` plugin
+- Contains reusable logic (`Utils.sum`)
+- Can be consumed by `app` or future modules
+
+## Key Gradle files
+
+- `settings.gradle`: lists modules in this build (`include('app')`, `include('util')`)
+- `app/build.gradle`, `util/build.gradle`: module-specific plugins, dependencies, test config
+- `gradle/libs.versions.toml`: central version/dependency catalog
+- `gradle.properties`: global Gradle behavior (for example, configuration cache)
+
+## Dependency note: implementation vs api
+
+`implementation project(':util')` means:
+
+- `app` can compile and run with `util`
+- `util` is not re-exported as public API to downstream modules
+
+Use `api` only when you intentionally want consumers to inherit that dependency.
 
 ## Useful commands
 
-- Get all projects
+- Show modules
+
 ```bash
 ./gradlew projects
 ```
 
-- Get all tasks
+- Show all tasks
+
 ```bash
 ./gradlew tasks --all
 ```
 
-- Run test suite inside app project
+- Run all tests
+
 ```bash
-./gradlew app:test
+./gradlew test
 ```
 
-> Note: `./gradlew test` this command will go through all subprojects and run task test for each of those subprojects. This command action was called run task at root project.
+- Run tests for one module
 
-## Useful configuration
-
-- Enable verbose console for displaying prerequisites tasks that run before our main task, edit file: `gradle.properties`
-```txt
-org.gradle.console=verbose
+```bash
+./gradlew :app:test
+./gradlew :util:test
 ```
 
-- Ref: [[https://docs.gradle.org/current/userguide/build_environment.html#header]](Gradle properties)
+- Show dependency graph for app
+
+```bash
+./gradlew :app:dependencies --configuration compileClasspath
+./gradlew :app:dependencies --configuration runtimeClasspath
+```
+
+- Explain why a dependency exists
+
+```bash
+./gradlew :app:dependencyInsight --dependency guava --configuration compileClasspath
+```
+
+## Learning mental model
+
+- `settings.gradle` = which modules exist
+- `build.gradle` = how each module is built
+- `src/main/java` = real app/library code
+- `src/test/java` = verification code
+- `project(':util')` = module-to-module dependency
