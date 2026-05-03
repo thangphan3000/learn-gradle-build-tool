@@ -45,3 +45,8 @@ tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+
+// NOTE: compile options (like debug) are task inputs and affect up-to-date checks.
+tasks.named('compileJava') {
+    options.debug = true
+}
