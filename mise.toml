@@ -1,0 +1,3 @@
+[tools]
+# NOTE: this just only use for the first time with command `gradle init`
+gradle = "9.5.0"
