@@ -7,7 +7,9 @@ import com.bank.util.Utils;
 
 public class App {
     public String getGreeting() {
-        return "Hello Thang Handsome! 2 + 3 = " + Utils.sum(2, 3);
+        int sum = Utils.sum(2, 3);
+        int resultWithFallback = Math.max(sum, 10);
+        return "Hello Thang Handsome! max(2 + 3, 10) = " + resultWithFallback;
     }
 
     public static void main(String[] args) {
