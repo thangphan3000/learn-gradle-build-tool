@@ -1,4 +1,5 @@
 plugins {
+    // Uses the `java-library` plugin, so this module provides a JAR and has no `run` task.
     id 'java-library'
 }
 
