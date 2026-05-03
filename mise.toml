@@ -1,3 +1,5 @@
 [tools]
-# NOTE: this just only use for the first time with command `gradle init`
+# NOTE: Only needed for the initial project setup with `gradle init`.
 gradle = "9.5.0"
+# Java version used to run Gradle itself (Gradle requires a JVM).
+java = "26.0.1"
