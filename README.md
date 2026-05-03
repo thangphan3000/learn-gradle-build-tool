@@ -75,6 +75,58 @@ This mapping is how Java and Gradle find and compile classes correctly.
 - `gradle/libs.versions.toml`: central version/dependency catalog
 - `gradle.properties`: global Gradle behavior (for example, configuration cache)
 
+## Plugin Types
+- There are three plugin types: core, community, and local.
+
+### Core
+- Shipped with Gradle distribution
+- https://docs.gradle.org/current/userguide/plugin_reference.html
+
+### Community
+- Download from plugin repository
+- Need to specify version
+- [[https://plugins.gradle.org]](Gradle plugins)
+
+```gradle
+plugins {
+    id 'application' // Core
+    id 'org.other.plugin' version '1.4.0' // Community
+}
+```
+
+### Local
+- Implement locally
+
+### Example: Java plugins
+- `java` plugin
+  - Configures source sets (`SourceSet`) such as `src/main/java` and `src/test/java`
+  - Adds common tasks like `compileJava`, `test`, and `jar`
+
+> Note: src/main/java is the default convention from the Java plugin (SourceSet defaults).
+
+- `java-library` plugin
+  - Applies `java` automatically
+  - Adds library-specific dependency separation (`api` vs `implementation`)
+
+- `application` plugin
+  - Build configuration for `main` class
+  - Applies `java` automatically
+  - Adds runnable/distribution tasks like `run`, `installDist`, `distZip`, and `distTar`
+
+Java plugin relationship chart:
+
+```text
+                 java
+               /      \
+      java-library   application
+```
+
+Notes:
+
+- In most projects, apply either `java-library` (for reusable libraries) or `application` (for runnable apps).
+- The Java base capability is brought in automatically through the Java plugin stack.
+- With core plugins, you do not specify a plugin version; Gradle uses the bundled core plugin implementation.
+
 ## Dependency note: implementation vs api
 
 `implementation project(':util')` means:
@@ -83,6 +135,72 @@ This mapping is how Java and Gradle find and compile classes correctly.
 - `util` is not re-exported as public API to downstream modules
 
 Use `api` only when you intentionally want consumers to inherit that dependency.
+
+## Dependency types and repositories
+
+In Gradle, a dependency is a library (or module) needed by your project.
+
+Common dependency source types:
+
+- Module dependency (external module)
+  - Published as coordinates like `group:name:version`
+  - Can have multiple releases/versions
+  - Usually downloaded from repositories such as Maven Central
+
+- Other Gradle project (project dependency)
+  - Depends on another module in the same multi-module build
+  - Example: `implementation project(':util')`
+
+- File dependency (not recommended for most cases)
+  - Directly points to local JAR files
+  - Harder to manage versions and transitive dependencies
+
+Example repository and dependency declarations:
+
+```gradle
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:33.2.1-jre' // module dependency
+    implementation project(':util')                    // project dependency
+    // implementation files('libs/legacy.jar')         // file dependency (avoid if possible)
+}
+```
+
+Simple sharing model in multi-module builds:
+
+```text
+Server  --> Common
+Client  --> Common
+```
+
+Both `Server` and `Client` can depend on a shared `Common` module to reuse code.
+
+## Repository
+
+A repository hosts published modules (artifacts) that Gradle can download.
+
+- One repository contains many modules.
+- Each module can have multiple released versions.
+- Popular public repository: Maven Central.
+
+Example repository configuration:
+
+```gradle
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://repo.my-company.example/maven")
+    }
+}
+```
+
+Use this when:
+
+- `mavenCentral()` for common open-source dependencies.
+- extra `maven { url = ... }` for internal/company artifacts.
 
 ## Useful commands
 
