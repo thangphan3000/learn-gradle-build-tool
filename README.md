@@ -131,3 +131,52 @@ Use `api` only when you intentionally want consumers to inherit that dependency.
 - `src/main/java` = real app/library code
 - `src/test/java` = verification code
 - `project(':util')` = module-to-module dependency
+
+## Gradle tasks knowledge (quick)
+
+Gradle tasks in this project come from three sources:
+
+- Core Gradle + base lifecycle tasks
+- Plugins applied in each module
+- Custom task declarations in build scripts or custom task classes
+
+In this repo specifically:
+
+- `app/build.gradle` applies `id 'application'`
+  - Adds Java-related tasks like `compileJava`, `test`, `jar`
+  - Adds app tasks like `run`, `installDist`, `distZip`, `distTar`
+- `util/build.gradle` applies `id 'java-library'`
+  - Adds library tasks like `compileJava`, `test`, `jar`
+
+So even without a direct `id 'java'`, this project is on the Java plugin stack through `application` and `java-library`.
+
+How to inspect tasks:
+
+```bash
+./gradlew tasks
+./gradlew tasks --all
+./gradlew :app:tasks --all
+./gradlew :util:tasks --all
+```
+
+Task outcomes you will commonly see:
+
+- `UP-TO-DATE`: skipped because inputs/outputs did not change
+- `FROM-CACHE`: restored from local/remote build cache
+- `NO-SOURCE`: skipped because declared source inputs are empty
+- `(no label)` or `EXECUTED`: task executed its actions
+  - A task with actions ran those actions
+  - A task with no actions may still be considered executed if it triggered dependencies (lifecycle task behavior)
+
+## Lifecycle tasks
+
+A lifecycle task is a task that orchestrates other tasks through dependencies and usually has no task actions of its own.
+
+In practice:
+
+- Running a lifecycle task triggers its dependent tasks.
+- It may appear as `(no label)` or `EXECUTED` even when it has no own actions, because dependent tasks ran.
+- Common lifecycle tasks include `assemble`, `check`, and `build`.
+
+## References
+- https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:task_outcomes
