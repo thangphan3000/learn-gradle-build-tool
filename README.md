@@ -296,5 +296,159 @@ In practice:
 - It may appear as `(no label)` or `EXECUTED` even when it has no own actions, because dependent tasks ran.
 - Common lifecycle tasks include `assemble`, `check`, and `build`.
 
+## Dependency management - api vs implementation configurations
+
+### Most Common Dependency Configurations
+- `testImplementation`: Required to compile and run tests, e.g. JUnit libraries
+- `runtimeOnly`: Required when running the application, e.g. a specific logging library
+- `implementation`: Used internally
+- `api`: Public-facing specification
+
+### Classpath mental model
+
+`classpath` means the places Java searches for classes. These places can be directories of compiled `.class` files or `.jar` files.
+
+Examples in this project:
+
+```text
+app/build/classes/java/main
+util/build/classes/java/main
+~/.gradle/caches/.../guava-33.5.0-jre.jar
+~/.gradle/caches/.../commons-lang3-3.18.0.jar
+```
+
+`compileClasspath` is used by `javac` when compiling source code.
+
+`runtimeClasspath` is used by the JVM when running the compiled program.
+
+Short rule:
+
+```text
+compileClasspath = what app source code directly needs to compile
+runtimeClasspath = what the running app and all dependencies need to execute
+```
+
+### Current project example
+
+`app` directly uses Guava:
+
+```java
+import com.google.common.collect.ImmutableSet;
+```
+
+So Guava must be on `app`'s `compileClasspath`.
+
+`util` uses Commons Lang internally:
+
+```java
+import org.apache.commons.lang3.tuple.Pair;
+```
+
+But `util` exposes only a Java `String` to `app`:
+
+```java
+public static String colorRange() {
+    return COLOR_RANGE.getLeft() + " to " + COLOR_RANGE.getRight();
+}
+```
+
+So `app` does not need Commons Lang to compile.
+
+That is why `util/build.gradle` should use `implementation`:
+
+```gradle
+implementation 'org.apache.commons:commons-lang3:3.18.0'
+```
+
+With `implementation`, `app`'s compile classpath is smaller:
+
+```text
+compileClasspath
++--- com.google.guava:guava:33.5.0-jre
+\--- project :util
+```
+
+Commons Lang still appears at runtime because `Utils.colorRange()` executes code that uses `Pair`:
+
+```text
+runtimeClasspath
++--- com.google.guava:guava:33.5.0-jre
+\--- project :util
+     \--- org.apache.commons:commons-lang3:3.18.0
+```
+
+If `app` directly imports `Pair`:
+
+```java
+import org.apache.commons.lang3.tuple.Pair;
+```
+
+then `app:compileJava` needs Commons Lang on `app`'s `compileClasspath`. In that case either:
+
+- Add Commons Lang directly to `app` with `implementation`
+- Change `util` to `api` only if `util` exposes `Pair` in public method return types, parameters, public fields, superclass, or interfaces
+
+Example where `api` is appropriate in `util`:
+
+```java
+public static Pair<String, String> colorRange() {
+    return Pair.of("red", "purple");
+}
+```
+
+Then `util/build.gradle` should use:
+
+```gradle
+api 'org.apache.commons:commons-lang3:3.18.0'
+```
+
+### Build performance note
+
+Using `api` unnecessarily can hurt build performance in larger projects because it leaks dependencies to consumers' `compileClasspath`.
+
+Evidence from this project:
+
+```text
+api            -> app compileClasspath includes commons-lang3
+implementation -> app compileClasspath does not include commons-lang3
+```
+
+This usually does not change runtime performance, but it can affect build performance because Gradle and `javac` must track more compile classpath entries.
+
+Recommended default:
+
+```text
+Use implementation by default.
+Use api only when the dependency is part of the module's public API.
+```
+
+### Inspecting cached dependency JARs
+
+Gradle stores downloaded dependencies under `~/.gradle/caches`.
+
+For Commons Lang in this project, the JAR is stored at a path like:
+
+```text
+~/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.18.0/.../commons-lang3-3.18.0.jar
+```
+
+A JAR is an archive of compiled `.class` files. For example, Commons Lang contains:
+
+```text
+org/apache/commons/lang3/tuple/Pair.class
+```
+
+That class is what Java resolves for this import:
+
+```java
+import org.apache.commons.lang3.tuple.Pair;
+```
+
+Useful command:
+
+```bash
+jar tf ~/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.18.0/*/commons-lang3-3.18.0.jar | grep -E 'Pair.class$'
+```
+
 ## References
 - https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:task_outcomes
