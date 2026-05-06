@@ -10,6 +10,6 @@ class AppTest {
     @Test void appHasAGreeting() {
         App app = new App();
         assertNotNull(app.getGreeting(), "app should have a greeting");
-        assertTrue(app.getGreeting().contains("2 + 3 = 5"), "app should use util sum function");
+        assertTrue(app.getGreeting().contains("Hello Thang Handsome! max(2 + 3, 10) = 10"), "app should use util sum function");
     }
 }

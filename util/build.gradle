@@ -10,6 +10,9 @@ repositories {
 dependencies {
     testImplementation libs.junit.jupiter
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Utils uses Pair internally but exposes only Java types, so consumers do not need Commons Lang to compile.
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
 }
 
 java {

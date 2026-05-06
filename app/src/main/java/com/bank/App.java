@@ -4,6 +4,7 @@
 package com.bank;
 
 import com.bank.util.Utils;
+import com.google.common.collect.ImmutableSet;
 
 public class App {
     public String getGreeting() {
@@ -13,6 +14,23 @@ public class App {
     }
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+      ImmutableSet<String> names = COLOR_NAMES;
+
+      for (String name : names) {
+        System.out.println(name);
+      }
+
+      // app only sees util's String API; Commons Lang stays internal to util.
+      System.out.println("color range: " + Utils.colorRange());
+
+      System.out.println(new App().getGreeting());
     }
+
+    private static final ImmutableSet<String> COLOR_NAMES = ImmutableSet.of(
+        "red",
+        "orange",
+        "yellow",
+        "green",
+        "blue",
+        "purple");
 }
